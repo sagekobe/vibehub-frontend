@@ -1620,6 +1620,10 @@
 
         function toggleUserMenu() {
             const menu = document.getElementById('userMenu');
+            if (!currentUser) {
+                openContactModal();
+                return;
+            }
             const isVisible = menu.style.display !== 'none';
             menu.style.display = isVisible ? 'none' : 'block';
             if (!isVisible && currentUser) {
@@ -1638,7 +1642,7 @@
             document.getElementById('userAvatar').textContent = '?';
             closeUserMenu();
             showToast('Logged out successfully', 'success');
-            renderProjects();
+            location.reload();
         }
 
         function switchAuthTab(mode) {
