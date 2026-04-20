@@ -1538,34 +1538,60 @@
             }
         }
 
-        async function handleUpload(e) {
-            e.preventDefault();
-            const title = document.getElementById('uploadTitle').value;
-            const author = document.getElementById('uploadAuthor').value;
-            const desc = document.getElementById('uploadDesc').value;
-            const course = document.getElementById('uploadCourse').value;
-            const tags = document.getElementById('uploadTags').value.split(',').map(t => t.trim()).filter(t => t);
-            const readme = document.getElementById('uploadReadme').value;
-            
-            const colors = ['cover-a', 'cover-b', 'cover-c', 'cover-d', 'cover-e'];
-            
-            try {
-                const result = await api('/api/projects', {
+       async function handleUpload(e) {
+    e.preventDefault();
+    const title = document.getElementById('uploadTitle').value;
+    const author = document.getElementById('uploadAuthor').value;
+    const desc = document.getElementById('uploadDesc').value;
+    const course = document.getElementById('uploadCourse').value;
+    const tags = document.getElementById('uploadTags').value.split(',').map(t => t.trim()).filter(t => t);
+    const readme = document.getElementById('uploadReadme').value;
+    const colors = ['cover-a', 'cover-b', 'cover-c', 'cover-d', 'cover-e'];
+
+    try {
+        // 第一步：创建项目，拿到项目 id
+        const result = await api('/api/projects', {
+            method: 'POST',
+            body: JSON.stringify({ 
+                title, author, description: desc, course, tags, readme, 
+                cover: colors[Math.floor(Math.random() * colors.length)] 
+            })
+        });
+
+        // 第二步：上传文件到 R2
+        const fileInput = document.getElementById('fileInput');
+        if (fileInput.files.length > 0) {
+            const token = localStorage.getItem('vibehub_token');
+            for (const file of fileInput.files) {
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('project_id', result.id);
+
+                const uploadRes = await fetch('https://vibehub.ijyzhang.workers.dev/api/upload', {
                     method: 'POST',
-                    body: JSON.stringify({ title, author, description: desc, course, tags, readme, cover: colors[Math.floor(Math.random() * colors.length)] })
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData  // ← FormData 不能设 Content-Type，浏览器自动处理
                 });
-                
-                await loadProjects();
-                renderProjects();
-                renderHotRankingTop3();
-                closeModal('uploadModal');
-                showToast('Project published!', 'success');
-                document.getElementById('uploadForm')?.reset();
-                document.getElementById('filePreview').innerHTML = '';
-            } catch (e) {
-                showToast(e.message || 'Upload failed', 'error');
+
+                if (!uploadRes.ok) {
+                    const err = await uploadRes.json();
+                    showToast(`File upload failed: ${err.error}`, 'error');
+                }
             }
         }
+
+        await loadProjects();
+        renderProjects();
+        renderHotRankingTop3();
+        closeModal('uploadModal');
+        showToast('Project published!', 'success');
+        document.getElementById('uploadForm')?.reset();
+        document.getElementById('filePreview').innerHTML = '';
+
+    } catch (e) {
+        showToast(e.message || 'Upload failed', 'error');
+    }
+}
 
         function handleFileSelect(e) {
             const preview = document.getElementById('filePreview');
