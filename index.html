@@ -1374,8 +1374,20 @@
             showToast(savedSet.has(id) ? 'Saved!' : 'Removed from saved', 'success');
         }
 
-        async function handleDownload(id) {
-            showToast('Download started!', 'success');
+        async function handleDownload(projectId) {
+             // 先获取该项目的文件列表
+    try {
+        const files = await api(`/api/projects/${projectId}/files`);
+        if (!files || files.length === 0) {
+            showToast('No files uploaded for this project', 'error');
+            return;
+        }
+        // 下载第一个文件
+        window.open(`https://vibehub.ijyzhang.workers.dev/api/files/${files[0].id}`, '_blank');
+        showToast('Download started!', 'success');
+    } catch (e) {
+        showToast('No files available', 'error');
+    }
         }
 
         async function openDetail(id) {
